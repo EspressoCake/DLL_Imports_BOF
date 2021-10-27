@@ -1,0 +1,27 @@
+beacon_command_register(
+"process_imports_api",
+"Get imported things.",
+"Synopsis: process_imports path_to_file");
+
+alias process_imports_api {
+    local('$handle $args $data');
+
+    $handle = openf(script_resource("process_imports.x64.o"));
+    $data = readb($handle, -1);
+    closef($handle);
+
+    if ( size(@_) > 3 ) {
+        berror($1, "We require two or three arguments.");
+        return;
+    }
+
+    if ( size(@_) == 2 ) {
+        $args = bof_pack($1, "z", $2);
+        beacon_inline_execute($1, $data, "getImportedDLLNamesWin32", $args);
+    }
+
+    if ( size(@_) == 3 ) {
+        $args = bof_pack($1, "zz", $2, $3);
+        beacon_inline_execute($1, $data, "needleGetImportedDLLNamesWin32", $args);
+    }
+}
