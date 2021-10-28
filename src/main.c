@@ -39,13 +39,17 @@ void getImportedDLLNamesWin32(char* args, int arglength)
     datap parser;
     formatp formatObject;
 
-    char* fileToCreate;
+    char* fileToCreate = NULL;
+    char* filterNeedle = NULL;
 
-    BeaconFormatAlloc(&formatObject, 64 * 1024);
+    int filterAPINames = 0;
 
     BeaconDataParse(&parser, args, arglength);
     fileToCreate = BeaconDataExtract(&parser, NULL);
+    filterAPINames = BeaconDataInt(&parser);
+    filterNeedle = BeaconDataExtract(&parser, NULL);
 
+    BeaconFormatAlloc(&formatObject, 64 * 1024);
     BeaconFormatPrintf(&formatObject, "File inquired: %s\n\n", fileToCreate);
 
     HANDLE hFile = KERNEL32$CreateFileA(fileToCreate, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
@@ -157,7 +161,18 @@ void getImportedDLLNamesWin32(char* args, int arglength)
         {
             if ( !InternalIsBadReadPtr((char*)fileMapping + pImportDescriptor->Name) )
             {
-                BeaconFormatPrintf(&formatObject, "\t%s\n", (char*)fileMapping + pImportDescriptor->Name);
+                // Debugging to fix...
+                if ( filterAPINames )
+                {
+                    if ( internalstrncmp((char*)fileMapping + pImportDescriptor->Name, filterNeedle, internalstrlen(filterNeedle)) != 0 )
+                    {
+                        BeaconFormatPrintf(&formatObject, "\t%s\n", (char*)fileMapping + pImportDescriptor->Name);
+                    }
+                }
+                else
+                {
+                    BeaconFormatPrintf(&formatObject, "\t%s\n", (char*)fileMapping + pImportDescriptor->Name);
+                }
             }
         }
     }    

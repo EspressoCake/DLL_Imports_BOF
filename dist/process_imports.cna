@@ -1,27 +1,42 @@
 beacon_command_register(
 "process_imports_api",
-"Get imported things.",
-"Synopsis: process_imports path_to_file");
+"Get imported things. Filter is optional.",
+"Synopsis: process_imports help");
 
 alias process_imports_api {
     local('$handle $args $data');
+    local('$verboseHelperString');
 
     $handle = openf(script_resource("process_imports.x64.o"));
     $data = readb($handle, -1);
     closef($handle);
 
-    if ( size(@_) > 3 ) {
-        berror($1, "We require two or three arguments.");
-        return;
-    }
+    $verboseHelperString  = "";
+    $verboseHelperString .= "Options:\n";
+    $verboseHelperString .= "========\n";
+    $verboseHelperString .= "All imported DLLs:\n\tprocess_imports_api PATH_TO_FILE\n\n";
+    $verboseHelperString .= "All imported DLLs (filtered):\n\tprocess_imports_api PATH_TO_FILE 1 DLL_SUBSTRING_TO_EXCLUDE\n\n";
+    $verboseHelperString .= "Functions/symbols imported from a DLL:\n\tprocess_imports_api PATH_TO_FILE NAME_OF_IMPORTED_DLL\n";
 
     if ( size(@_) == 2 ) {
-        $args = bof_pack($1, "z", $2);
-        beacon_inline_execute($1, $data, "getImportedDLLNamesWin32", $args);
-    }
-
-    if ( size(@_) == 3 ) {
+        if ( @_[1] ismatch "help") {
+            berror($1, $verboseHelperString);
+            return;
+        } else {
+            $args = bof_pack($1, "ziz", $2, 0, "Not Used");
+            beacon_inline_execute($1, $data, "getImportedDLLNamesWin32", $args);
+        }
+    } else if ( size(@_) == 3 ) {
         $args = bof_pack($1, "zz", $2, $3);
         beacon_inline_execute($1, $data, "needleGetImportedDLLNamesWin32", $args);
+    } else if ( size(@_) == 4 ) {
+        if ( @_[2] ismatch "^[0-1]") {
+            $args = bof_pack($1, "ziz", $2, $3, $4);
+            beacon_inline_execute($1, $data, "getImportedDLLNamesWin32", $args);
+        } else {
+            berror($1, $verboseHelperString);
+        }
+    } else {
+        berror($1, $verboseHelperString);
     }
 }
